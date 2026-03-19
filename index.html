@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>District Nuh — Income Verification Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --bg2: #161b22;
+  --bg3: #21262d;
+  --bg4: #30363d;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --text3: #484f58;
+  --blue: #388bfd;
+  --blue-bg: rgba(56,139,253,0.12);
+  --green: #3fb950;
+  --green-bg: rgba(63,185,80,0.12);
+  --orange: #d29922;
+  --orange-bg: rgba(210,153,34,0.12);
+  --red: #f85149;
+  --red-bg: rgba(248,81,73,0.12);
+  --purple: #bc8cff;
+  --purple-bg: rgba(188,140,255,0.12);
+  --teal: #39d0d8;
+  --teal-bg: rgba(57,208,216,0.12);
+  --gold: #e3b341;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+/* HEADER */
+.header {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.logo {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 600; color: #fff;
+  flex-shrink: 0;
+}
+.header-title { font-size: 15px; font-weight: 600; }
+.header-sub { font-size: 11px; color: var(--text2); }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.date-badge {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--text2);
+  font-family: 'DM Mono', monospace;
+}
+#upload-btn {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: opacity .2s;
+  font-family: 'DM Sans', sans-serif;
+}
+#upload-btn:hover { opacity: 0.85; }
+#file-input { display: none; }
+
+/* LAYOUT */
+.layout { display: flex; height: calc(100vh - 57px); }
+.sidebar {
+  width: 200px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 16px 0;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+.nav-section { margin-bottom: 6px; }
+.nav-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: 6px 16px 4px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 16px;
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 13px;
+  border-left: 2px solid transparent;
+  transition: all .15s;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active {
+  background: rgba(56,139,253,0.1);
+  color: var(--blue);
+  border-left-color: var(--blue);
+  font-weight: 500;
+}
+.nav-icon { font-size: 14px; }
+
+/* MAIN */
+.main { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* HISTORY BAR */
+.history-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.hist-lbl { font-size: 11px; color: var(--text2); margin-right: 4px; }
+.hist-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.hist-btn:hover { border-color: var(--blue); color: var(--blue); }
+.hist-btn.active { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); font-weight: 500; }
+
+/* PAGE HEADER */
+.page-hdr { margin-bottom: 18px; }
+.page-hdr h2 { font-size: 18px; font-weight: 600; }
+.page-hdr p { font-size: 12px; color: var(--text2); margin-top: 3px; }
+
+/* KPI ROW */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.kpi-card.blue::before { background: var(--blue); }
+.kpi-card.green::before { background: var(--green); }
+.kpi-card.orange::before { background: var(--orange); }
+.kpi-card.purple::before { background: var(--purple); }
+.kpi-label { font-size: 11px; color: var(--text2); margin-bottom: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; }
+.kpi-value { font-size: 26px; font-weight: 600; font-family: 'DM Mono', monospace; }
+.kpi-card.blue .kpi-value { color: var(--blue); }
+.kpi-card.green .kpi-value { color: var(--green); }
+.kpi-card.orange .kpi-value { color: var(--orange); }
+.kpi-card.purple .kpi-value { color: var(--purple); }
+.kpi-sub { font-size: 11px; color: var(--text2); margin-top: 6px; }
+.kpi-trend { font-size: 11px; margin-top: 4px; }
+.trend-up { color: var(--green); }
+.trend-dn { color: var(--red); }
+
+/* GRID */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+/* CARD */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.card-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.card-title { font-size: 13px; font-weight: 600; }
+.card-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.chart-wrap { position: relative; width: 100%; height: 200px; }
+.chart-wrap-lg { position: relative; width: 100%; height: 260px; }
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  white-space: nowrap;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,.02); }
+.table-wrap { overflow-x: auto; }
+
+/* BADGES */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-orange { background: var(--orange-bg); color: var(--orange); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+.badge-purple { background: var(--purple-bg); color: var(--purple); }
+
+/* PROGRESS BAR */
+.prog-wrap { background: var(--bg4); border-radius: 3px; height: 6px; min-width: 80px; }
+.prog-fill { height: 6px; border-radius: 3px; transition: width .5s; }
+
+/* STARS */
+.stars { color: var(--gold); letter-spacing: 1px; }
+
+/* RANK */
+.rank-medal { font-size: 16px; }
+
+/* ALERT BOXES */
+.alert {
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.alert-warning { background: var(--orange-bg); border: 1px solid rgba(210,153,34,0.3); color: var(--gold); }
+.alert-success { background: var(--green-bg); border: 1px solid rgba(63,185,80,0.3); color: var(--green); }
+.alert-info { background: var(--blue-bg); border: 1px solid rgba(56,139,253,0.3); color: var(--blue); }
+.alert-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+/* UPLOAD ZONE */
+.upload-zone {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  background: var(--bg3);
+}
+.upload-zone:hover { border-color: var(--blue); background: rgba(56,139,253,0.05); }
+.upload-zone-icon { font-size: 36px; margin-bottom: 12px; }
+.upload-zone-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.upload-zone-sub { font-size: 12px; color: var(--text2); }
+
+/* DAILY INPUT */
+.daily-input { width: 80px; background: var(--bg3); border: 1px solid var(--border2); border-radius: 4px; padding: 4px 8px; color: var(--text); font-size: 12px; font-family: 'DM Mono', monospace; }
+.daily-input:focus { outline: none; border-color: var(--blue); }
+.btn { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 7px 14px; color: var(--text); font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .15s; }
+.btn:hover { border-color: var(--blue); color: var(--blue); }
+.btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.btn-primary:hover { opacity: 0.85; color: #fff; }
+
+/* SELECT */
+select {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+}
+select:focus { outline: none; border-color: var(--blue); }
+
+/* UNMAPPED VIZ */
+.unmap-row { margin-bottom: 10px; }
+.unmap-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+.unmap-bar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; background: var(--bg4); }
+.unmap-mapped { background: var(--blue); }
+.unmap-unmapped { background: var(--red-bg); border-left: 1px solid var(--red); }
+
+/* DELTA BADGE */
+.delta-pos { color: var(--green); font-size: 11px; font-family: 'DM Mono', monospace; }
+.delta-neg { color: var(--red); font-size: 11px; font-family: 'DM Mono', monospace; }
+.delta-neu { color: var(--text2); font-size: 11px; font-family: 'DM Mono', monospace; }
+
+/* SCROLL */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+  .main { padding: 12px; }
+}
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 12px 18px;
+  font-size: 13px; color: var(--text);
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  z-index: 9999;
+  animation: slideIn .3s ease;
+  max-width: 320px;
+}
+.toast.success { border-color: var(--green); }
+.toast.error { border-color: var(--red); }
+@keyframes slideIn { from { transform: translateX(60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* LOADING */
+.loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--text2); gap: 10px; }
+.spinner { width: 18px; height: 18px; border: 2px solid var(--border2); border-top-color: var(--blue); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- GLOBAL LOADING -->
+<div id="global-loading" style="display:none;position:fixed;inset:0;background:rgba(13,17,23,.85);z-index:9998;align-items:center;justify-content:center;flex-direction:column;gap:14px">
+  <div style="width:36px;height:36px;border:3px solid #30363d;border-top-color:#388bfd;border-radius:50%;animation:spin .7s linear infinite"></div>
+  <div style="color:#8b949e;font-size:13px">Loading from cloud…</div>
+</div>
+
+<!-- SETUP MODAL -->
+<div id="setup-modal" style="display:none;position:fixed;inset:0;background:rgba(13,17,23,.9);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#161b22;border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:32px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+    <div style="font-size:22px;margin-bottom:8px">☁ Connect Cloud Database</div>
+    <div style="font-size:13px;color:#8b949e;margin-bottom:24px;line-height:1.6">
+      This links your dashboard to <strong style="color:#e6edf3">JSONBin.io</strong> — a free cloud store. All uploads will sync instantly to every team member's browser. Takes 2 minutes to set up.
+    </div>
+
+    <div style="background:#0d1117;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;margin-bottom:20px;font-size:12px;line-height:2;color:#8b949e">
+      <div style="color:#e6edf3;font-weight:600;margin-bottom:8px">Setup Steps:</div>
+      <div>1️⃣  Go to <a href="https://jsonbin.io" target="_blank" style="color:#388bfd">jsonbin.io</a> → Sign Up (free)</div>
+      <div>2️⃣  After login → click <strong style="color:#e6edf3">API Keys</strong> in left menu</div>
+      <div>3️⃣  Copy your <strong style="color:#e6edf3">Master Key</strong> (starts with $2b$...)</div>
+      <div>4️⃣  Paste it below and click <strong style="color:#e6edf3">Connect</strong></div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;color:#8b949e;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">JSONBin Master API Key</label>
+      <input type="password" id="setup-apikey" placeholder="$2b$10$..." style="width:100%;background:#0d1117;border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:10px 12px;color:#e6edf3;font-size:13px;font-family:'DM Mono',monospace">
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:11px;color:#8b949e;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Bin ID (leave empty to auto-create)</label>
+      <input type="text" id="setup-binid" placeholder="Auto-created on first connect" style="width:100%;background:#0d1117;border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:10px 12px;color:#e6edf3;font-size:13px;font-family:'DM Mono',monospace">
+      <div style="font-size:11px;color:#484f58;margin-top:4px">If your team already has a Bin ID, paste it here to share the same data.</div>
+    </div>
+
+    <div id="setup-error" style="display:none;background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:10px 12px;color:#f85149;font-size:12px;margin-bottom:14px"></div>
+
+    <div style="display:flex;gap:10px">
+      <button onclick="doSetup()" style="flex:1;background:#388bfd;border:none;border-radius:6px;padding:11px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif" id="setup-btn">Connect & Sync ↗</button>
+      <button onclick="skipSetup()" style="background:#21262d;border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:11px 16px;color:#8b949e;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">Use Locally</button>
+    </div>
+    <div style="font-size:11px;color:#484f58;margin-top:12px;text-align:center">Free tier: 10,000 reads/writes per month · No credit card needed</div>
+  </div>
+</div>
+
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">N</div>
+    <div>
+      <div class="header-title">District Nuh — Income Verification</div>
+      <div class="header-sub">PPP Caste Verification Dashboard · Haryana</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="date-badge" id="active-date-display">Loading…</div>
+    <button id="upload-btn" onclick="document.getElementById('file-input').click()">
+      ⬆ Upload Excel
+    </button>
+    <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFileUpload(event)">
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="nav-section">
+      <div class="nav-label">Main</div>
+      <div class="nav-item active" onclick="goTo('overview')"><span class="nav-icon">◈</span> Overview</div>
+      <div class="nav-item" onclick="goTo('progress')"><span class="nav-icon">↗</span> Progress Tracker</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Reports</div>
+      <div class="nav-item" onclick="goTo('leaderboard')"><span class="nav-icon">★</span> Leaderboard</div>
+      <div class="nav-item" onclick="goTo('worst')"><span class="nav-icon">⚠</span> Worst Performers</div>
+      <div class="nav-item" onclick="goTo('unmapped')"><span class="nav-icon">◎</span> Unmapped Families</div>
+      <div class="nav-item" onclick="goTo('sector')"><span class="nav-icon">⊞</span> Sector Committee</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Deep Dive</div>
+      <div class="nav-item" onclick="goTo('details')"><span class="nav-icon">⊡</span> Block Details</div>
+      <div class="nav-item" onclick="goTo('daily')"><span class="nav-icon">⊕</span> Daily Entry</div>
+      <div class="nav-item" onclick="goTo('analytics')"><span class="nav-icon">◆</span> Analytics</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Data</div>
+      <div class="nav-item" onclick="goTo('upload')"><span class="nav-icon">⬆</span> Upload History</div>
+      <div class="nav-item" onclick="goTo('cloudsettings')"><span class="nav-icon">☁</span> Cloud Settings</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="main-content">
+
+    <!-- HISTORY BAR (shown in most sections) -->
+    <div class="history-bar" id="history-bar">
+      <span class="hist-lbl">📅 Date:</span>
+      <div id="hist-buttons"></div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div id="sec-overview" class="section active">
+      <div class="page-hdr">
+        <h2>Overview</h2>
+        <p>District-wide summary across all 4 verification categories</p>
+      </div>
+      <div class="kpi-row" id="kpi-overview"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-hdr"><div><div class="card-title">Priority Income — Completion %</div><div class="card-sub">Per block/town</div></div></div>
+          <div class="chart-wrap"><canvas id="ch-piv"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div><div class="card-title">Pending Phase — Completion %</div><div class="card-sub">Per block/town</div></div></div>
+          <div class="chart-wrap"><canvas id="ch-ppi"></canvas></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-hdr"><div><div class="card-title">Sector Comm. Not Agreed — Pending</div></div></div>
+          <div class="chart-wrap"><canvas id="ch-scna"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div><div class="card-title">Sector Comm. Correction — Pending</div></div></div>
+          <div class="chart-wrap"><canvas id="ch-scc"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS TRACKER -->
+    <div id="sec-progress" class="section">
+      <div class="page-hdr">
+        <h2>Progress Tracker</h2>
+        <p>Day-over-day changes — select two dates to compare</p>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+        <div><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">FROM DATE</label><select id="prog-from"></select></div>
+        <div><label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">TO DATE</label><select id="prog-to"></select></div>
+        <div style="margin-top:18px"><button class="btn btn-primary" onclick="renderProgress()">Compare →</button></div>
+      </div>
+      <div id="progress-content"></div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div id="sec-leaderboard" class="section">
+      <div class="page-hdr"><h2>Leaderboard</h2><p>Rankings by completion rate with star ratings</p></div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">CATEGORY</label>
+          <select id="lb-cat" onchange="renderLeaderboard()">
+            <option value="piv">Priority Income Verification</option>
+            <option value="ppi">Pending Phase Income</option>
+            <option value="scna">Sector Comm. Not Agreed</option>
+            <option value="scc">Sector Comm. Correction</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">SORT BY</label>
+          <select id="lb-sort" onchange="renderLeaderboard()">
+            <option value="pct">Completion % (High→Low)</option>
+            <option value="done">Families Done (High→Low)</option>
+            <option value="pending">Pending (Low→High)</option>
+          </select>
+        </div>
+      </div>
+      <div class="card" id="lb-content"></div>
+    </div>
+
+    <!-- WORST PERFORMERS -->
+    <div id="sec-worst" class="section">
+      <div class="page-hdr"><h2>Worst Performers</h2><p>Blocks needing urgent field attention</p></div>
+      <div id="worst-alert"></div>
+      <div class="card" id="worst-table"></div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-hdr"><div class="card-title">Total pending burden — all categories combined</div></div>
+        <div class="chart-wrap-lg"><canvas id="ch-worst"></canvas></div>
+      </div>
+    </div>
+
+    <!-- UNMAPPED -->
+    <div id="sec-unmapped" class="section">
+      <div class="page-hdr"><h2>Unmapped Families</h2><p>Pushed − Mapped = Unmapped (not yet field-ready)</p></div>
+      <div id="unmapped-alert"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">PIV — Mapping Status</div></div>
+          <div id="unmap-piv-bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Pending Phase — Mapping Status</div></div>
+          <div id="unmap-ppi-bars"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Full Unmapped Table</div></div>
+        <div class="table-wrap"><table id="unmap-table"><thead><tr><th>Block/Town</th><th>PIV Pushed</th><th>PIV Mapped</th><th>PIV Unmapped</th><th>PP Pushed</th><th>PP Mapped</th><th>PP Unmapped</th><th>Total Unmapped</th></tr></thead><tbody id="unmap-tbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- SECTOR COMMITTEE -->
+    <div id="sec-sector" class="section">
+      <div class="page-hdr"><h2>Sector Committee</h2><p>Not Agreed and Correction categories</p></div>
+      <div class="kpi-row" id="kpi-sector"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Not Agreed — Pending per Block</div></div>
+          <div class="table-wrap"><table><thead><tr><th>Block/Town</th><th>Pushed</th><th>Verified</th><th>Pending</th><th>%</th><th>Bar</th></tr></thead><tbody id="scna-tbody"></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Correction — Pending per Block</div></div>
+          <div class="table-wrap"><table><thead><tr><th>Block/Town</th><th>Pushed</th><th>Verified</th><th>Pending</th><th>%</th><th>Bar</th></tr></thead><tbody id="scc-tbody"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BLOCK DETAILS -->
+    <div id="sec-details" class="section">
+      <div class="page-hdr"><h2>Block Details</h2><p>Deep dive into any single block/town</p></div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">SELECT BLOCK/TOWN</label>
+        <select id="det-block" onchange="renderBlockDetail()"></select>
+      </div>
+      <div id="block-detail"></div>
+    </div>
+
+    <!-- DAILY ENTRY -->
+    <div id="sec-daily" class="section">
+      <div class="page-hdr"><h2>Daily Progress Entry</h2><p>Enter today's completed families to calculate updated progress and targets</p></div>
+      <div class="alert alert-info"><span class="alert-icon">ℹ</span> Enter the number of families completed TODAY for each block. The dashboard will compute new totals and remaining work.</div>
+      <div class="card">
+        <div class="card-hdr">
+          <div class="card-title">Today's Completed Entries</div>
+          <select id="daily-cat" onchange="renderDailyInputs()">
+            <option value="piv">Priority Income Verification</option>
+            <option value="ppi">Pending Phase Income</option>
+          </select>
+        </div>
+        <div id="daily-inputs"></div>
+        <div style="margin-top:14px;display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="calcDaily()">Calculate Progress</button>
+          <button class="btn" onclick="resetDaily()">Reset</button>
+        </div>
+      </div>
+      <div id="daily-result"></div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div id="sec-analytics" class="section">
+      <div class="page-hdr"><h2>Analytics</h2><p>Cross-category insights and correlations</p></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Volunteer vs Operator (PIV)</div></div>
+          <div class="chart-wrap"><canvas id="ch-an1"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Not Traceable — all blocks</div></div>
+          <div class="chart-wrap"><canvas id="ch-an2"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Cumulative pending — all 4 categories stacked</div></div>
+        <div class="chart-wrap-lg"><canvas id="ch-an3"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Star Ratings — all blocks across categories</div></div>
+        <div class="table-wrap" id="ratings-table"></div>
+      </div>
+    </div>
+
+    <!-- UPLOAD HISTORY -->
+    <div id="sec-upload" class="section">
+      <div class="page-hdr"><h2>Upload History</h2><p>All uploaded Excel files with date-wise data</p></div>
+      <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+        <div class="upload-zone-icon">📊</div>
+        <div class="upload-zone-title">Upload New Excel Report</div>
+        <div class="upload-zone-sub">Click to select .xlsx file — data will be stored date-wise<br>Required sheets: Priority Income Verification, Pending phase INC, Sector Committee Not Agreed, Sector Committee Correction</div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-hdr"><div class="card-title">Upload History</div></div>
+        <div id="upload-history-list"></div>
+      </div>
+    </div>
+
+    <!-- CLOUD SETTINGS -->
+    <div id="sec-cloudsettings" class="section">
+      <div class="page-hdr"><h2>☁ Cloud Settings</h2><p>Configure JSONBin sync so all team members see the same data</p></div>
+      <div id="cloud-status-card" class="card" style="margin-bottom:16px"></div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Update Configuration</div></div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">JSONBin Master API Key</label>
+          <input type="password" id="cfg-apikey" placeholder="$2b$10$..." style="width:100%;max-width:500px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace">
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Bin ID</label>
+          <input type="text" id="cfg-binid" placeholder="Will appear after first connect" style="width:100%;max-width:500px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Mono',monospace">
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">Share this Bin ID with team members so they connect to the same data store.</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="saveCfgAndReload()">Save & Reconnect</button>
+          <button class="btn" onclick="showSetupModal()">Re-run Setup Wizard</button>
+          <button class="btn" style="color:var(--red)" onclick="clearCfg()">Disconnect Cloud</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-hdr"><div class="card-title">How to share with team</div></div>
+        <div style="font-size:13px;color:var(--text2);line-height:2" id="share-instructions">Loading…</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG — JSONBin Cloud Sync
+// ============================================================
+const CFG_KEY = 'nuh_cfg_v1';
+
+function getCfg() {
+  try { return JSON.parse(localStorage.getItem(CFG_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+function saveCfg(c) { localStorage.setItem(CFG_KEY, JSON.stringify(c)); }
+
+// ============================================================
+// JSONBIN CLOUD DATABASE
+// Docs: https://jsonbin.io  — free tier: 10k reads/writes per month
+// ============================================================
+const JSONBIN_BASE = 'https://api.jsonbin.io/v3';
+
+async function cloudGet() {
+  const cfg = getCfg();
+  if (!cfg.binId || !cfg.apiKey) return null;
+  try {
+    const r = await fetch(`${JSONBIN_BASE}/b/${cfg.binId}/latest`, {
+      headers: { 'X-Master-Key': cfg.apiKey }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    return j.record || { snapshots: {} };
+  } catch(e) {
+    console.warn('Cloud fetch failed:', e.message);
+    return null;
+  }
+}
+
+async function cloudSave(db) {
+  const cfg = getCfg();
+  if (!cfg.binId || !cfg.apiKey) return false;
+  try {
+    const r = await fetch(`${JSONBIN_BASE}/b/${cfg.binId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': cfg.apiKey },
+      body: JSON.stringify(db)
+    });
+    return r.ok;
+  } catch(e) {
+    console.warn('Cloud save failed:', e.message);
+    return false;
+  }
+}
+
+async function createBin(apiKey, seedData) {
+  const r = await fetch(`${JSONBIN_BASE}/b`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Master-Key': apiKey,
+      'X-Bin-Name': 'nuh-dashboard',
+      'X-Bin-Private': 'false'
+    },
+    body: JSON.stringify(seedData)
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status + ' — check your API key');
+  const j = await r.json();
+  return j.metadata.id;
+}
+
+// ============================================================
+// LOCAL CACHE (fallback while cloud loads)
+// ============================================================
+const CACHE_KEY = 'nuh_cache_v3';
+function getCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || { snapshots: {} }; }
+  catch(e) { return { snapshots: {} }; }
+}
+function setCache(db) { localStorage.setItem(CACHE_KEY, JSON.stringify(db)); }
+
+// Runtime DB (in memory)
+let _db = { snapshots: {} };
+
+function getDB() { return _db; }
+async function saveDB(db) {
+  _db = db;
+  setCache(db);
+  const ok = await cloudSave(db);
+  if (!ok) showToast('⚠ Saved locally only — check cloud config', 'error');
+  return ok;
+}
+
+// SEED with uploaded data if empty
+function seedInitialData() {
+  if (!_db.snapshots['2026-03-19']) {
+    _db.snapshots['2026-03-19'] = SEED_DATA;
+  }
+}
+
+// ============================================================
+// SEED DATA (from uploaded Excel)
+// ============================================================
+const BLOCKS_PIV = ['FEROZEPUR JHIRKA BL','FEROZEPUR JHIRKA MC','INDRI BL','NAGINA BL','NUH BL','NUH MC','PINGWAN BL','PUNAHANA BL','PUNAHANA MC','TAORU BL','TAORU MC'];
+const SEED_DATA = {
+  piv: [
+    {block:'FEROZEPUR JHIRKA BL',pushed:3953,mapped:3952,completed:3889,teamlead:3899,operator:3923,volunteer:3866,socworker:393,student:945,nottrace:0},
+    {block:'FEROZEPUR JHIRKA MC',pushed:734,mapped:733,completed:718,teamlead:726,operator:726,volunteer:714,socworker:154,student:61,nottrace:1},
+    {block:'INDRI BL',pushed:2623,mapped:2621,completed:2602,teamlead:2601,operator:2607,volunteer:2597,socworker:318,student:517,nottrace:0},
+    {block:'NAGINA BL',pushed:3478,mapped:3476,completed:3422,teamlead:3423,operator:3442,volunteer:3426,socworker:241,student:963,nottrace:0},
+    {block:'NUH BL',pushed:5194,mapped:5194,completed:5156,teamlead:5153,operator:5180,volunteer:5165,socworker:740,student:2510,nottrace:0},
+    {block:'NUH MC',pushed:695,mapped:692,completed:674,teamlead:678,operator:682,volunteer:673,socworker:50,student:88,nottrace:0},
+    {block:'PINGWAN BL',pushed:4571,mapped:4567,completed:4509,teamlead:4522,operator:4530,volunteer:4511,socworker:185,student:875,nottrace:0},
+    {block:'PUNAHANA BL',pushed:5575,mapped:5575,completed:5566,teamlead:5513,operator:5555,volunteer:5554,socworker:413,student:1064,nottrace:0},
+    {block:'PUNAHANA MC',pushed:921,mapped:921,completed:920,teamlead:916,operator:917,volunteer:916,socworker:37,student:103,nottrace:0},
+    {block:'TAORU BL',pushed:4881,mapped:4880,completed:4867,teamlead:4861,operator:4859,volunteer:4856,socworker:191,student:472,nottrace:0},
+    {block:'TAORU MC',pushed:733,mapped:732,completed:729,teamlead:729,operator:727,volunteer:729,socworker:0,student:143,nottrace:0}
+  ],
+  ppi: [
+    {block:'FEROZEPUR JHIRKA BL',pushed:2560,mapped:2367,completed:2223,teamlead:1882,operator:1965,volunteer:1838,socworker:107,student:308,nottrace:26},
+    {block:'FEROZEPUR JHIRKA MC',pushed:661,mapped:638,completed:607,teamlead:550,operator:530,volunteer:502,socworker:34,student:13,nottrace:7},
+    {block:'INDRI BL',pushed:1974,mapped:1968,completed:1803,teamlead:1672,operator:1729,volunteer:1575,socworker:97,student:105,nottrace:14},
+    {block:'NAGINA BL',pushed:2114,mapped:2069,completed:1932,teamlead:1695,operator:1739,volunteer:1681,socworker:51,student:114,nottrace:11},
+    {block:'NUH BL',pushed:2925,mapped:2861,completed:2716,teamlead:2555,operator:2654,volunteer:2544,socworker:346,student:379,nottrace:8},
+    {block:'NUH MC',pushed:524,mapped:478,completed:459,teamlead:413,operator:437,volunteer:413,socworker:21,student:42,nottrace:6},
+    {block:'PINGWAN BL',pushed:2469,mapped:2409,completed:2291,teamlead:2117,operator:2104,volunteer:2067,socworker:38,student:49,nottrace:21},
+    {block:'PUNAHANA BL',pushed:4161,mapped:4148,completed:4059,teamlead:3905,operator:4000,volunteer:3880,socworker:160,student:258,nottrace:15},
+    {block:'PUNAHANA MC',pushed:504,mapped:503,completed:490,teamlead:453,operator:491,volunteer:493,socworker:6,student:15,nottrace:11},
+    {block:'TAORU BL',pushed:3310,mapped:3069,completed:2973,teamlead:2709,operator:2719,volunteer:2626,socworker:47,student:87,nottrace:25},
+    {block:'TAORU MC',pushed:587,mapped:586,completed:568,teamlead:506,operator:566,volunteer:509,socworker:1,student:18,nottrace:6}
+  ],
+  scna: [
+    {block:'FEROZEPUR JHIRKA BL',pushed:2956,verified:2925,pending:31,teamlead:448,socworker:2702,volunteer:2610,operator:2953,student:2701},
+    {block:'FEROZEPUR JHIRKA MC',pushed:661,verified:649,pending:12,teamlead:655,socworker:485,volunteer:646,operator:660,student:125},
+    {block:'INDRI BL',pushed:1748,verified:1686,pending:62,teamlead:802,socworker:1570,volunteer:1712,operator:1740,student:51},
+    {block:'NAGINA BL',pushed:2751,verified:2661,pending:90,teamlead:692,socworker:2545,volunteer:2722,operator:2669,student:436},
+    {block:'NUH BL',pushed:4075,verified:4003,pending:72,teamlead:4045,socworker:1529,volunteer:4025,operator:4066,student:3105},
+    {block:'NUH MC',pushed:447,verified:437,pending:10,teamlead:437,socworker:81,volunteer:418,operator:439,student:295},
+    {block:'PINGWAN BL',pushed:2451,verified:2249,pending:202,teamlead:975,socworker:2062,volunteer:2395,operator:2422,student:2114},
+    {block:'PUNAHANA BL',pushed:4384,verified:4323,pending:61,teamlead:2468,socworker:3826,volunteer:4376,operator:4381,student:3821},
+    {block:'PUNAHANA MC',pushed:642,verified:604,pending:38,teamlead:180,socworker:561,volunteer:609,operator:637,student:356},
+    {block:'TAORU BL',pushed:2067,verified:2018,pending:49,teamlead:1170,socworker:1670,volunteer:2031,operator:2035,student:1674},
+    {block:'TAORU MC',pushed:735,verified:724,pending:11,teamlead:560,socworker:644,volunteer:723,operator:732,student:650}
+  ],
+  scc: [
+    {block:'FEROZEPUR JHIRKA BL',pushed:5458,verified:5453,pending:5,teamlead:650,socworker:4875,volunteer:4253,operator:5457,student:4902},
+    {block:'FEROZEPUR JHIRKA MC',pushed:1071,verified:1070,pending:1,teamlead:1066,socworker:670,volunteer:1042,operator:1071,student:179},
+    {block:'INDRI BL',pushed:4156,verified:4155,pending:1,teamlead:1248,socworker:3832,volunteer:4155,operator:4156,student:131},
+    {block:'NAGINA BL',pushed:4405,verified:4404,pending:1,teamlead:433,socworker:4306,volunteer:4403,operator:4404,student:377},
+    {block:'NUH BL',pushed:5965,verified:5964,pending:1,teamlead:5956,socworker:1627,volunteer:5965,operator:5965,student:3304},
+    {block:'NUH MC',pushed:710,verified:709,pending:1,teamlead:686,socworker:169,volunteer:659,operator:710,student:326},
+    {block:'PINGWAN BL',pushed:4943,verified:4941,pending:2,teamlead:1070,socworker:3549,volunteer:4942,operator:4941,student:4700},
+    {block:'PUNAHANA BL',pushed:5902,verified:5901,pending:1,teamlead:4337,socworker:5565,volunteer:5902,operator:5901,student:5284},
+    {block:'PUNAHANA MC',pushed:894,verified:894,pending:0,teamlead:211,socworker:866,volunteer:894,operator:894,student:292},
+    {block:'TAORU BL',pushed:6178,verified:6176,pending:2,teamlead:1886,socworker:5322,volunteer:6176,operator:6173,student:5425},
+    {block:'TAORU MC',pushed:1003,verified:1003,pending:0,teamlead:712,socworker:830,volunteer:978,operator:1002,student:776}
+  ]
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let currentDate = null;
+let chartInstances = {};
+
+// ============================================================
+// HELPERS
+// ============================================================
+const N = n => (n||0).toLocaleString('en-IN');
+const P = (a,b) => b ? Math.round(a/b*10)/10 : 0;
+const SHORT = b => b.replace('FEROZEPUR JHIRKA','FJ').replace(' BL','').replace(' MC',' MC').trim();
+
+function stars(p) {
+  if(p>=99.5) return '★★★★★';
+  if(p>=98) return '★★★★☆';
+  if(p>=95) return '★★★☆☆';
+  if(p>=90) return '★★☆☆☆';
+  return '★☆☆☆☆';
+}
+function badgePct(p) {
+  if(p>=99) return `<span class="badge badge-green">${p}%</span>`;
+  if(p>=95) return `<span class="badge badge-blue">${p}%</span>`;
+  if(p>=90) return `<span class="badge badge-orange">${p}%</span>`;
+  return `<span class="badge badge-red">${p}%</span>`;
+}
+function badgePend(n, hi, mid) {
+  if(n>hi) return `<span class="badge badge-red">${N(n)}</span>`;
+  if(n>mid) return `<span class="badge badge-orange">${N(n)}</span>`;
+  return `<span class="badge badge-green">${N(n)}</span>`;
+}
+function progBar(pct, color) {
+  return `<div class="prog-wrap"><div class="prog-fill" style="width:${Math.min(100,pct)}%;background:${color}"></div></div>`;
+}
+function getSnap(date) { return _db.snapshots[date] || null; }
+function getAllDates() { return Object.keys(_db.snapshots).sort().reverse(); }
+function getCurrentSnap() { return getSnap(currentDate); }
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  showGlobalLoading(true);
+  const cfg = getCfg();
+  if (!cfg.binId || !cfg.apiKey) {
+    _db = getCache();
+    seedInitialData();
+    showGlobalLoading(false);
+    showSetupModal();
+  } else {
+    const cloudData = await cloudGet();
+    if (cloudData) {
+      _db = cloudData;
+      setCache(_db);
+    } else {
+      _db = getCache();
+      seedInitialData();
+      showToast('⚠ Could not reach cloud — showing cached data', 'error');
+    }
+    showGlobalLoading(false);
+  }
+  const dates = getAllDates();
+  currentDate = dates[0];
+  renderHistoryBar();
+  renderAll();
+  updateDateDisplay();
+}
+function showGlobalLoading(show) {
+  document.getElementById('global-loading').style.display = show ? 'flex' : 'none';
+}
+
+function updateDateDisplay() {
+  document.getElementById('active-date-display').textContent = currentDate || 'No data';
+}
+
+// ============================================================
+// HISTORY BAR
+// ============================================================
+function renderHistoryBar() {
+  const dates = getAllDates();
+  const wrap = document.getElementById('hist-buttons');
+  wrap.innerHTML = dates.map(d =>
+    `<button class="hist-btn ${d===currentDate?'active':''}" onclick="selectDate('${d}')">${d}</button>`
+  ).join('');
+}
+
+function selectDate(d) {
+  currentDate = d;
+  renderHistoryBar();
+  updateDateDisplay();
+  renderAll();
+  renderProgress();
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function goTo(page) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('sec-'+page).classList.add('active');
+  event.currentTarget.classList.add('active');
+  const noBar = ['daily','upload','progress','cloudsettings'];
+  document.getElementById('history-bar').style.display = noBar.includes(page)?'none':'flex';
+  if(page==='cloudsettings') renderCloudSettings();
+}
+
+// ============================================================
+// RENDER ALL
+// ============================================================
+function renderAll() {
+  renderOverview();
+  renderLeaderboard();
+  renderWorst();
+  renderUnmapped();
+  renderSector();
+  renderBlockDetailInit();
+  renderDailyInputs();
+  renderAnalytics();
+  renderUploadHistory();
+  renderProgressSelects();
+}
+
+// ============================================================
+// OVERVIEW
+// ============================================================
+function renderOverview() {
+  const snap = getCurrentSnap();
+  if(!snap) return;
+  const {piv,ppi,scna,scc} = snap;
+
+  const totPivPushed = piv.reduce((a,r)=>a+r.pushed,0);
+  const totPivDone = piv.reduce((a,r)=>a+r.completed,0);
+  const totPpiPushed = ppi.reduce((a,r)=>a+r.pushed,0);
+  const totPpiDone = ppi.reduce((a,r)=>a+r.completed,0);
+  const totScnaPend = scna.reduce((a,r)=>a+r.pending,0);
+  const totSccPend = scc.reduce((a,r)=>a+r.pending,0);
+
+  document.getElementById('kpi-overview').innerHTML = `
+    <div class="kpi-card blue">
+      <div class="kpi-label">PIV — Total Pushed</div>
+      <div class="kpi-value">${N(totPivPushed)}</div>
+      <div class="kpi-sub">${P(totPivDone,totPivPushed)}% completed · ${N(totPivPushed-totPivDone)} pending</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Pending Phase — Pushed</div>
+      <div class="kpi-value">${N(totPpiPushed)}</div>
+      <div class="kpi-sub">${P(totPpiDone,totPpiPushed)}% completed · ${N(totPpiPushed-totPpiDone)} pending</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">SCNA — Pending</div>
+      <div class="kpi-value">${N(totScnaPend)}</div>
+      <div class="kpi-sub">Sector Committee Not Agreed</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">SCC — Pending</div>
+      <div class="kpi-value">${N(totSccPend)}</div>
+      <div class="kpi-sub">Sector Committee Correction</div>
+    </div>`;
+
+  const labels = piv.map(r=>SHORT(r.block));
+  const COLORS = ['#388bfd','#3fb950','#d29922','#f85149','#bc8cff','#39d0d8','#e3b341','#79c0ff','#56d364','#ffa657','#ff7b72'];
+  const opts = (min=80) => ({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min,grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#8b949e',font:{size:10}}},x:{ticks:{color:'#8b949e',font:{size:10}},grid:{display:false}}}});
+
+  mkChart('ch-piv',{type:'bar',data:{labels,datasets:[{data:piv.map(r=>P(r.completed,r.pushed)),backgroundColor:COLORS,borderRadius:4}]},options:opts(85)});
+  mkChart('ch-ppi',{type:'bar',data:{labels,datasets:[{data:ppi.map(r=>P(r.completed,r.pushed)),backgroundColor:COLORS,borderRadius:4}]},options:opts(75)});
+  mkChart('ch-scna',{type:'bar',data:{labels,datasets:[{data:scna.map(r=>r.pending),backgroundColor:COLORS.map(c=>c+'99'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#8b949e',font:{size:10}}},x:{ticks:{color:'#8b949e',font:{size:10}},grid:{display:false}}}}});
+  mkChart('ch-scc',{type:'bar',data:{labels,datasets:[{data:scc.map(r=>r.pending),backgroundColor:COLORS.map(c=>c+'99'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#8b949e',font:{size:10}}},x:{ticks:{color:'#8b949e',font:{size:10}},grid:{display:false}}}}});
+}
+
+// ============================================================
+// LEADERBOARD
+// ============================================================
+function renderLeaderboard() {
+  const snap = getCurrentSnap(); if(!snap) return;
+  const cat = document.getElementById('lb-cat').value;
+  const sort = document.getElementById('lb-sort').value;
+
+  let rows = snap[cat].map((r,i)=>{
+    const done = r.completed ?? r.verified;
+    const pending = r.pushed - done;
+    const pct = P(done, r.pushed);
+    return {...r,done,pending,pct};
+  });
+  if(sort==='pct') rows.sort((a,b)=>b.pct-a.pct);
+  else if(sort==='done') rows.sort((a,b)=>b.done-a.done);
+  else rows.sort((a,b)=>a.pending-b.pending);
+
+  const medals = ['🥇','🥈','🥉'];
+  let html = `<table><thead><tr><th>Rank</th><th>Block/Town</th><th>Pushed</th><th>Done</th><th>Pending</th><th>Completion</th><th>Progress</th><th>Rating</th></tr></thead><tbody>`;
+  rows.forEach((r,i)=>{
+    const color = r.pct>=99?'#3fb950':r.pct>=95?'#388bfd':r.pct>=90?'#d29922':'#f85149';
+    html+=`<tr>
+      <td><span style="font-size:${i<3?'16px':'13px'}">${medals[i]||`<span style="color:var(--text2);font-family:'DM Mono'">#${i+1}</span>`}</span></td>
+      <td style="font-weight:500">${r.block}</td>
+      <td style="font-family:'DM Mono'">${N(r.pushed)}</td>
+      <td style="font-family:'DM Mono'">${N(r.done)}</td>
+      <td>${badgePend(r.pending,100,20)}</td>
+      <td>${badgePct(r.pct)}</td>
+      <td>${progBar(r.pct,color)}</td>
+      <td><span class="stars">${stars(r.pct)}</span></td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('lb-content').innerHTML=html;
+}
+
+// ============================================================
+// WORST PERFORMERS
+// ============================================================
+function renderWorst() {
+  const snap = getCurrentSnap(); if(!snap) return;
+  const {piv,ppi,scna,scc} = snap;
+  const combined = piv.map((r,i)=>{
+    const pp=r.pushed-r.completed, ppip=ppi[i].pushed-ppi[i].completed;
+    return {block:r.block, pivP:pp, ppiP:ppip, scnaP:scna[i].pending, sccP:scc[i].pending,
+      total:pp+ppip+scna[i].pending+scc[i].pending,
+      pivPct:P(r.completed,r.pushed), ppiPct:P(ppi[i].completed,ppi[i].pushed)};
+  }).sort((a,b)=>b.total-a.total);
+
+  const top3 = combined.slice(0,3).map(r=>r.block).join(', ');
+  document.getElementById('worst-alert').innerHTML=
+    `<div class="alert alert-warning"><span class="alert-icon">⚠</span><span>Blocks needing urgent attention: <strong>${top3}</strong>. PINGWAN BL has highest Not Agreed pending (202). Deploy additional operators immediately.</span></div>`;
+
+  let html=`<table><thead><tr><th>Rank</th><th>Block/Town</th><th>PIV Pending</th><th>PPI Pending</th><th>SCNA Pending</th><th>SCC Pending</th><th>Total Pending</th></tr></thead><tbody>`;
+  combined.forEach((r,i)=>{
+    html+=`<tr>
+      <td><span style="color:${i<3?'var(--red)':'var(--text2)';}">${i<3?'⚠':i+1}</span></td>
+      <td style="font-weight:500">${r.block}</td>
+      <td>${badgePend(r.pivP,100,30)}</td>
+      <td>${badgePend(r.ppiP,500,100)}</td>
+      <td>${badgePend(r.scnaP,100,30)}</td>
+      <td>${badgePend(r.sccP,3,1)}</td>
+      <td style="font-weight:600;font-family:'DM Mono'">${N(r.total)}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('worst-table').innerHTML=html;
+
+  const COLORS=['#f85149','#d29922','#3fb950','#388bfd','#bc8cff','#39d0d8','#e3b341','#79c0ff','#56d364','#ffa657','#ff7b72'];
+  mkChart('ch-worst',{
+    type:'bar',
+    data:{
+      labels:combined.map(r=>SHORT(r.block)),
+      datasets:[
+        {label:'PIV Pending',data:combined.map(r=>r.pivP),backgroundColor:'#388bfd55',borderColor:'#388bfd',borderWidth:1},
+        {label:'PPI Pending',data:combined.map(r=>r.ppiP),backgroundColor:'#3fb95055',borderColor:'#3fb950',borderWidth:1},
+        {label:'SCNA Pending',data:combined.map(r=>r.scnaP),backgroundColor:'#d2992255',borderColor:'#d29922',borderWidth:1},
+        {label:'SCC Pending',data:combined.map(r=>r.sccP),backgroundColor:'#bc8cff55',borderColor:'#bc8cff',borderWidth:1},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b949e',font:{size:11},boxWidth:12}}},scales:{x:{stacked:true,ticks:{color:'#8b949e',font:{size:10}},grid:{display:false}},y:{stacked:true,grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#8b949e',font:{size:10}}}}}
+  });
+}
+
+// ============================================================
+// UNMAPPED
+// ============================================================
+function renderUnmapped() {
+  const snap = getCurrentSnap(); if(!snap) return;
+  const {piv,ppi} = snap;
+  const totPivU = piv.reduce((a,r)=>a+(r.pushed-r.mapped),0);
+  const totPpiU = ppi.reduce((a,r)=>a+(r.pushed-r.mapped),0);
+
+  document.getElementById('unmapped-alert').innerHTML=
+    `<div class="alert alert-info"><span class="alert-icon">ℹ</span>Total unmapped: PIV = <strong>${N(totPivU)}</strong>, Pending Phase = <strong>${N(totPpiU)}</strong>. Unmapped families cannot be verified — coordinate with patwari.</div>`;
+
+  let pivBars='', ppiBars='', rows='';
+  const maxPivU = Math.max(...piv.map(r=>r.pushed));
+  const maxPpiU = Math.max(...ppi.map(r=>r.pushed));
+
+  piv.forEach((r,i)=>{
+    const u=r.pushed-r.mapped, mapPct=P(r.mapped,r.pushed);
+    const ppu=ppi[i].pushed-ppi[i].mapped;
+    pivBars+=`<div class="unmap-row">
+      <div class="unmap-label"><span>${SHORT(r.block)}</span><span>${N(u)} unmapped</span></div>
+      <div class="unmap-bar"><div class="unmap-mapped" style="width:${mapPct}%"></div></div>
+    </div>`;
+    const ppiMapPct=P(ppi[i].mapped,ppi[i].pushed);
+    ppiBars+=`<div class="unmap-row">
+      <div class="unmap-label"><span>${SHORT(r.block)}</span><span>${N(ppu)} unmapped</span></div>
+      <div class="unmap-bar"><div class="unmap-mapped" style="width:${ppiMapPct}%"></div></div>
+    </div>`;
+    rows+=`<tr>
+      <td>${r.block}</td>
+      <td style="font-family:'DM Mono'">${N(r.pushed)}</td><td style="font-family:'DM Mono'">${N(r.mapped)}</td>
+      <td>${badgePend(u,5,1)}</td>
+      <td style="font-family:'DM Mono'">${N(ppi[i].pushed)}</td><td style="font-family:'DM Mono'">${N(ppi[i].mapped)}</td>
+      <td>${badgePend(ppu,50,10)}</td>
+      <td style="font-weight:600;font-family:'DM Mono'">${N(u+ppu)}</td>
+    </tr>`;
+  });
+  document.getElementById('unmap-piv-bars').innerHTML=pivBars;
+  document.getElementById('unmap-ppi-bars').innerHTML=ppiBars;
+  document.getElementById('unmap-tbody').innerHTML=rows;
+}
+
+// ============================================================
+// SECTOR COMMITTEE
+// ============================================================
+function renderSector() {
+  const snap = getCurrentSnap(); if(!snap) return;
+  const {scna,scc} = snap;
+  const tScnaP=scna.reduce((a,r)=>a+r.pushed,0), tScnaPend=scna.reduce((a,r)=>a+r.pending,0);
+  const tSccP=scc.reduce((a,r)=>a+r.pushed,0), tSccPend=scc.reduce((a,r)=>a+r.pending,0);
+
+  document.getElementById('kpi-sector').innerHTML=`
+    <div class="kpi-card orange"><div class="kpi-label">SCNA — Total Pushed</div><div class="kpi-value">${N(tScnaP)}</div><div class="kpi-sub">${N(tScnaPend)} pending</div></div>
+    <div class="kpi-card orange"><div class="kpi-label">SCNA — Verified</div><div class="kpi-value">${N(tScnaP-tScnaPend)}</div><div class="kpi-sub">${P(tScnaP-tScnaPend,tScnaP)}% done</div></div>
+    <div class="kpi-card green"><div class="kpi-label">SCC — Total Pushed</div><div class="kpi-value">${N(tSccP)}</div><div class="kpi-sub">${N(tSccPend)} pending</div></div>
+    <div class="kpi-card green"><div class="kpi-label">SCC — Verified</div><div class="kpi-value">${N(tSccP-tSccPend)}</div><div class="kpi-sub">${P(tSccP-tSccPend,tSccP)}% done</div></div>`;
+
+  const maxSCNA=Math.max(...scna.map(r=>r.pending));
+  const maxSCC=Math.max(...scc.map(r=>r.pending));
+  let h1='',h2='';
+  scna.forEach((r,i)=>{
+    const p=P(r.pending,r.pushed);
+    h1+=`<tr><td>${SHORT(r.block)}</td><td>${N(r.pushed)}</td><td>${N(r.verified)}</td>
+      <td>${badgePend(r.pending,100,30)}</td><td>${p}%</td>
+      <td>${progBar(maxSCNA?r.pending/maxSCNA*100:0,'#d29922')}</td></tr>`;
+  });
+  scc.forEach((r,i)=>{
+    const p=P(r.pending,r.pushed);
+    h2+=`<tr><td>${SHORT(r.block)}</td><td>${N(r.pushed)}</td><td>${N(r.verified)}</td>
+      <td>${badgePend(r.pending,3,1)}</td><td>${p}%</td>
+      <td>${progBar(maxSCC?r.pending/maxSCC*100:0,'#3fb950')}</td></tr>`;
+  });
+  document.getElementById('scna-tbody').innerHTML=h1;
+  document.getElementById('scc-tbody').innerHTML=h2;
+}
+
+// ============================================================
+// BLOCK DETAILS
+// ============================================================
+function renderBlockDetailInit() {
+  const snap = getCurrentSnap(); if(!snap) return;
+  const sel = document.getElementById('det-block');
+  sel.innerHTML = snap.piv.map((r,i)=>`<option value="${i}">${r.block}</option>`).join('');
+  renderBlockDetail();
+}
+function renderBlockDetail() {
+  const snap = getCurrentSnap(); if(!snap) return;
+  const i = parseInt(document.getElementById('det-block').value);
+  const {piv,ppi,scna,scc} = snap;
+  const r=piv[i], pp=ppi[i], sc=scna[i], sf=scc[i];
+  const pivPct=P(r.completed,r.pushed), ppiPct=P(pp.completed,pp.pushed);
+  const scnaPct=P(sc.verified,sc.pushed), sccPct=P(sf.verified,sf.pushed);
+
+  document.getElementById('block-detail').innerHTML=`
+    <div class="kpi-row">
+      <div class="kpi-card blue"><div class="kpi-label">PIV Completion</div><div class="kpi-value">${pivPct}%</div><div class="kpi-sub">${N(r.completed)} / ${N(r.pushed)}</div></div>
+      <div class="kpi-card green"><div class="kpi-label">PPI Completion</div><div class="kpi-value">${ppiPct}%</div><div class="kpi-sub">${N(pp.completed)} / ${N(pp.pushed)}</div></div>
+      <div class="kpi-card orange"><div class="kpi-label">SCNA Pending</div><div class="kpi-value">${N(sc.pending)}</div></div>
+      <div class="kpi-card purple"><div class="kpi-label">SCC Pending</div><div class="kpi-value">${N(sf.pending)}</div></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">PIV — Staff Deployed</div></div>
+        <table>${staffRows(['Team Lead','Operator','Volunteer','Soc. Worker','Student','Not Traceable'],[r.teamlead,r.operator,r.volunteer,r.socworker,r.student,r.nottrace])}</table>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Pending Phase — Staff Deployed</div></div>
+        <table>${staffRows(['Team Lead','Operator','Volunteer','Soc. Worker','Student','Not Traceable'],[pp.teamlead,pp.operator,pp.volunteer,pp.socworker,pp.student,pp.nottrace])}</table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Ratings — ${r.block}</div></div>
+      <div style="display:flex;gap:28px;flex-wrap:wrap">
+        ${ratingWidget('PIV',pivPct)}${ratingWidget('PPI',ppiPct)}${ratingWidget('SCNA',scnaPct)}${ratingWidget('SCC',sccPct)}
+      </div>
+    </div>`;
+}
+function staffRows(labels,vals){
+  return '<tbody>'+labels.map((l,i)=>`<tr><td style="color:var(--text2)">${l}</td><td style="font-family:'DM Mono';text-align:right">${N(vals[i])}</td></tr>`).join('')+'</tbody>';
+}
+function ratingWidget(cat,p){
+  return `<div style="text-align:center"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">${cat}</div><div class="stars" style="font-size:18px">${stars(p)}</div><div style="font-size:13px;font-weight:600;margin-top:4px;font-family:'DM Mono'">${p}%</div></div>`;
+}
+
+// ============================================================
+// DAILY ENTRY
+// ============================================================
+function renderDailyInputs() {
+  const snap = getCurrentSnap(); if(!snap) return;
+  const cat = document.getElementById('daily-cat').value;
+  const data = snap[cat];
+  let html=`<table><thead><tr><th>Block/Town</th><th>Total Pushed</th><th>Completed (as of ${currentDate})</th><th>Pending</th><th>Add Today's Completed</th><th>New Remaining</th></tr></thead><tbody>`;
+  data.forEach((r,i)=>{
+    const done=r.completed??r.verified, pending=r.pushed-done;
+    html+=`<tr>
+      <td style="font-weight:500">${r.block}</td>
+      <td style="font-family:'DM Mono'">${N(r.pushed)}</td>
+      <td style="font-family:'DM Mono'">${N(done)}</td>
+      <td>${badgePend(pending,200,50)}</td>
+      <td><input type="number" class="daily-input" id="di-${i}" min="0" max="${pending}" value="0" oninput="updateDailyRem(${i})"></td>
+      <td id="dr-${i}" style="font-family:'DM Mono';color:var(--text2)">${N(pending)}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('daily-inputs').innerHTML=html;
+  document.getElementById('daily-result').innerHTML='';
+}
+function updateDailyRem(i){
+  const snap=getCurrentSnap(); if(!snap)return;
+  const cat=document.getElementById('daily-cat').value;
+  const r=snap[cat][i];
+  const done=(r.completed??r.verified);
+  const val=parseInt(document.getElementById('di-'+i).value)||0;
+  const rem=r.pushed-done-val;
+  document.getElementById('dr-'+i).textContent=N(Math.max(0,rem));
+}
+function resetDaily(){
+  document.querySelectorAll('.daily-input').forEach(el=>el.value=0);
+  const snap=getCurrentSnap(); if(!snap)return;
+  const cat=document.getElementById('daily-cat').value;
+  snap[cat].forEach((_,i)=>{
+    const r=snap[cat][i];
+    document.getElementById('dr-'+i).textContent=N(r.pushed-(r.completed??r.verified));
+  });
+  document.getElementById('daily-result').innerHTML='';
+}
+function calcDaily(){
+  const snap=getCurrentSnap(); if(!snap)return;
+  const cat=document.getElementById('daily-cat').value;
+  const data=snap[cat];
+  let totalToday=0,totalRem=0;
+  let rows='';
+  data.forEach((r,i)=>{
+    const today=parseInt(document.getElementById('di-'+i).value)||0;
+    const done=(r.completed??r.verified);
+    const newDone=done+today, rem=r.pushed-newDone;
+    const newPct=P(newDone,r.pushed);
+    totalToday+=today; totalRem+=Math.max(0,rem);
+    const delta=today>0?`<span class="delta-pos">+${N(today)}</span>`:`<span class="delta-neu">0</span>`;
+    rows+=`<tr><td>${r.block}</td><td>${delta}</td><td>${N(newDone)}</td><td>${badgePct(newPct)}</td><td>${badgePend(Math.max(0,rem),200,50)}</td></tr>`;
+  });
+  document.getElementById('daily-result').innerHTML=`
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Today's Progress Summary</div></div>
+      <div class="kpi-row" style="margin-bottom:14px">
+        <div class="kpi-card green"><div class="kpi-label">Done Today</div><div class="kpi-value">${N(totalToday)}</div></div>
+        <div class="kpi-card orange"><div class="kpi-label">Still Remaining</div><div class="kpi-value">${N(totalRem)}</div></div>
+      </div>
+      <table><thead><tr><th>Block/Town</th><th>Today's +</th><th>New Total</th><th>New %</th><th>Remaining</th></tr></thead><tbody>${rows}</tbody></table>
+    </div>`;
+}
+
+// ============================================================
+// ANALYTICS
+// ============================================================
+function renderAnalytics() {
+  const snap=getCurrentSnap(); if(!snap)return;
+  const {piv,ppi,scna,scc}=snap;
+  const labels=piv.map(r=>SHORT(r.block));
+  const COLORS=['#388bfd','#3fb950','#d29922','#f85149','#bc8cff','#39d0d8','#e3b341','#79c0ff','#56d364','#ffa657','#ff7b72'];
+
+  mkChart('ch-an1',{type:'scatter',data:{datasets:piv.map((r,i)=>({label:r.block,data:[{x:r.volunteer,y:r.operator}],backgroundColor:COLORS[i],pointRadius:7,pointHoverRadius:9}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Volunteers',color:'#8b949e'},ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'}},y:{title:{display:true,text:'Operators',color:'#8b949e'},ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'}}}}});
+
+  mkChart('ch-an2',{type:'bar',data:{labels,datasets:[{label:'Not Traceable (PIV)',data:piv.map(r=>r.nottrace),backgroundColor:'#f8514944',borderColor:'#f85149',borderWidth:1},{label:'Not Traceable (PPI)',data:ppi.map(r=>r.nottrace),backgroundColor:'#d2992244',borderColor:'#d29922',borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b949e',boxWidth:12,font:{size:11}}}},scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'}}}}});
+
+  mkChart('ch-an3',{type:'bar',data:{labels,datasets:[
+    {label:'PIV Pending',data:piv.map(r=>r.pushed-r.completed),backgroundColor:'#388bfd66',stack:'s'},
+    {label:'PPI Pending',data:ppi.map(r=>r.pushed-r.completed),backgroundColor:'#3fb95066',stack:'s'},
+    {label:'SCNA Pending',data:scna.map(r=>r.pending),backgroundColor:'#d2992266',stack:'s'},
+    {label:'SCC Pending',data:scc.map(r=>r.pending),backgroundColor:'#bc8cff66',stack:'s'},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#8b949e',boxWidth:12,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:'#8b949e',font:{size:10}},grid:{display:false}},y:{stacked:true,ticks:{color:'#8b949e'},grid:{color:'rgba(255,255,255,.05)'}}}}});
+
+  // Ratings table
+  const all=piv.map((_,i)=>{
+    const pp=P(piv[i].completed,piv[i].pushed),pi=P(ppi[i].completed,ppi[i].pushed);
+    const sc=P(scna[i].verified,scna[i].pushed),sf=P(scc[i].verified,scc[i].pushed);
+    return {block:piv[i].block,pp,pi,sc,sf,avg:((pp+pi+sc+sf)/4)};
+  }).sort((a,b)=>b.avg-a.avg);
+  let rt=`<table><thead><tr><th>Block/Town</th><th>PIV %</th><th>PIV ★</th><th>PPI %</th><th>PPI ★</th><th>SCNA %</th><th>SCNA ★</th><th>SCC %</th><th>SCC ★</th><th>Overall</th></tr></thead><tbody>`;
+  all.forEach(r=>{
+    rt+=`<tr><td style="font-weight:500">${r.block}</td>
+      <td>${r.pp}%</td><td class="stars">${stars(r.pp)}</td>
+      <td>${r.pi}%</td><td class="stars">${stars(r.pi)}</td>
+      <td>${r.sc}%</td><td class="stars">${stars(r.sc)}</td>
+      <td>${r.sf}%</td><td class="stars">${stars(r.sf)}</td>
+      <td>${badgePct(parseFloat(r.avg.toFixed(1)))}</td></tr>`;
+  });
+  document.getElementById('ratings-table').innerHTML=rt+'</tbody></table>';
+}
+
+// ============================================================
+// PROGRESS COMPARISON
+// ============================================================
+function renderProgressSelects() {
+  const dates=getAllDates();
+  ['prog-from','prog-to'].forEach(id=>{
+    const sel=document.getElementById(id);
+    sel.innerHTML=dates.map(d=>`<option value="${d}">${d}</option>`).join('');
+  });
+  if(dates.length>1) document.getElementById('prog-from').value=dates[1];
+  if(dates.length>0) document.getElementById('prog-to').value=dates[0];
+}
+function renderProgress() {
+  const from=document.getElementById('prog-from').value;
+  const to=document.getElementById('prog-to').value;
+  const snapA=getSnap(from), snapB=getSnap(to);
+  if(!snapA||!snapB){
+    document.getElementById('progress-content').innerHTML=`<div class="alert alert-info"><span class="alert-icon">ℹ</span>Upload more data files to compare dates. Currently only ${getAllDates().length} date(s) available.</div>`;
+    return;
+  }
+  const cats=[{key:'piv',label:'Priority Income Verification'},{key:'ppi',label:'Pending Phase Income'}];
+  let html='';
+  cats.forEach(cat=>{
+    const A=snapA[cat.key], B=snapB[cat.key];
+    html+=`<div class="card"><div class="card-hdr"><div class="card-title">${cat.label} — ${from} → ${to}</div></div>
+    <table><thead><tr><th>Block/Town</th><th>${from} Done</th><th>${to} Done</th><th>Delta</th><th>${from} %</th><th>${to} %</th><th>Change</th></tr></thead><tbody>`;
+    A.forEach((r,i)=>{
+      const dA=r.completed??r.verified, dB=B[i].completed??B[i].verified;
+      const delta=dB-dA;
+      const pA=P(dA,r.pushed), pB=P(dB,B[i].pushed);
+      const deltaP=Math.round((pB-pA)*10)/10;
+      html+=`<tr>
+        <td>${r.block}</td>
+        <td style="font-family:'DM Mono'">${N(dA)}</td>
+        <td style="font-family:'DM Mono'">${N(dB)}</td>
+        <td class="${delta>0?'delta-pos':delta<0?'delta-neg':'delta-neu'}">${delta>0?'+':''}${N(delta)}</td>
+        <td>${pA}%</td><td>${pB}%</td>
+        <td class="${deltaP>0?'delta-pos':deltaP<0?'delta-neg':'delta-neu'}">${deltaP>0?'+':''}${deltaP}%</td>
+      </tr>`;
+    });
+    html+='</tbody></table></div>';
+  });
+  document.getElementById('progress-content').innerHTML=html;
+}
+
+// ============================================================
+// UPLOAD HISTORY
+// ============================================================
+function renderUploadHistory() {
+  const db=getDB();
+  const dates=Object.keys(db.snapshots).sort().reverse();
+  if(!dates.length){
+    document.getElementById('upload-history-list').innerHTML='<p style="color:var(--text2);text-align:center;padding:20px">No uploads yet.</p>';
+    return;
+  }
+  let html=`<table><thead><tr><th>Date</th><th>PIV Blocks</th><th>PPI Blocks</th><th>SCNA Blocks</th><th>SCC Blocks</th><th>Actions</th></tr></thead><tbody>`;
+  dates.forEach(d=>{
+    const s=db.snapshots[d];
+    html+=`<tr>
+      <td style="font-family:'DM Mono';font-weight:500">${d}</td>
+      <td>${s.piv?.length||0} blocks</td><td>${s.ppi?.length||0} blocks</td>
+      <td>${s.scna?.length||0} blocks</td><td>${s.scc?.length||0} blocks</td>
+      <td><button class="btn" style="font-size:11px;padding:3px 10px" onclick="selectDate('${d}')">View</button>
+      <button class="btn" style="font-size:11px;padding:3px 10px;color:var(--red);margin-left:4px" onclick="deleteDate('${d}')">Delete</button></td>
+    </tr>`;
+  });
+  document.getElementById('upload-history-list').innerHTML=html+'</tbody></table>';
+}
+async function deleteDate(d){
+  if(!confirm(`Delete data for ${d}?`)) return;
+  delete _db.snapshots[d];
+  await saveDB(_db);
+  const dates=getAllDates();
+  if(dates.length){ currentDate=dates[0]; renderHistoryBar(); updateDateDisplay(); renderAll(); }
+  else { currentDate=null; }
+  showToast('Deleted '+d,'success');
+}
+
+// ============================================================
+// EXCEL UPLOAD
+// ============================================================
+async function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if(!file){ return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+
+      // Parse sheets — support both sheet name variations
+      const sheetMap = {
+        piv: wb.SheetNames.find(s=>s.toLowerCase().includes('priority')),
+        ppi: wb.SheetNames.find(s=>s.toLowerCase().includes('pending')),
+        scna: wb.SheetNames.find(s=>s.toLowerCase().includes('not agreed')),
+        scc: wb.SheetNames.find(s=>s.toLowerCase().includes('correction')),
+      };
+
+      const missing = Object.entries(sheetMap).filter(([k,v])=>!v).map(([k])=>k);
+      if(missing.length){ showToast('Missing sheets: '+missing.join(', '),'error'); return; }
+
+      function parseSheet(sheetName, type) {
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+        // Find header row
+        let headerIdx = rows.findIndex(r => r.some && r.some(c => typeof c==='string' && (c.includes('BlockTown') || c.includes('Block/Town'))));
+        if(headerIdx<0) headerIdx=1;
+        const headers = rows[headerIdx].map(h=>h?.toString().trim()||'');
+        const dataRows = rows.slice(headerIdx+1).filter(r=>r[0]);
+
+        return dataRows.map(row=>{
+          const obj={};
+          headers.forEach((h,i)=>{ obj[h]=row[i]; });
+          if(type==='piv'||type==='ppi') return {
+            block: obj['BlockTowns']||obj['Block/Town']||'',
+            pushed: +obj['Families Pushed For Verification']||0,
+            mapped: +obj['Mapped Families']||0,
+            completed: +obj['Completed Families']||0,
+            teamlead: +obj["Team Lead Count"]||0,
+            operator: +obj["Operator's Count"]||0,
+            volunteer: +obj["Volunteer's Count"]||0,
+            socworker: +obj["Social Worker's Count"]||0,
+            student: +obj["Student's Count"]||0,
+            nottrace: +obj['Not Traceable Families']||0
+          };
+          else return {
+            block: obj['Block/Town']||obj['BlockTowns']||'',
+            pushed: +obj['Total Pushed']||0,
+            verified: +obj['Total Verified']||0,
+            pending: +obj['Total Pending']||0,
+            teamlead: +obj['Team Lead Count']||0,
+            socworker: +obj['Social Worker Count']||0,
+            volunteer: +obj['Volunteer Count']||0,
+            operator: +obj['Operator Count']||0,
+            student: +obj['Student Count']||0
+          };
+        }).filter(r=>r.block);
+      }
+
+      const snapshot = {
+        piv: parseSheet(sheetMap.piv,'piv'),
+        ppi: parseSheet(sheetMap.ppi,'ppi'),
+        scna: parseSheet(sheetMap.scna,'scna'),
+        scc: parseSheet(sheetMap.scc,'scc'),
+      };
+
+      // Ask for date
+      const today = new Date().toISOString().split('T')[0];
+      const dateStr = prompt(`Enter date for this upload (YYYY-MM-DD):`, today);
+      if(!dateStr) return;
+
+      showToast('⏳ Saving to cloud…', 'success');
+      _db.snapshots[dateStr] = snapshot;
+      const saved = await saveDB(_db);
+      currentDate = dateStr;
+      renderHistoryBar();
+      updateDateDisplay();
+      renderAll();
+      renderProgress();
+      event.target.value='';
+      showToast(saved ? `✓ Saved & synced for ${dateStr}` : `✓ Saved locally for ${dateStr}`, 'success');
+    } catch(err) {
+      console.error(err);
+      showToast('Error reading file: '+err.message,'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ============================================================
+// CHARTS
+// ============================================================
+function mkChart(id,config){
+  if(chartInstances[id]) chartInstances[id].destroy();
+  const el=document.getElementById(id);
+  if(!el) return;
+  chartInstances[id]=new Chart(el,config);
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg,type='success'){
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+// ============================================================
+// SETUP MODAL
+// ============================================================
+function showSetupModal() {
+  document.getElementById('setup-modal').style.display = 'flex';
+}
+function hideSetupModal() {
+  document.getElementById('setup-modal').style.display = 'none';
+}
+function skipSetup() {
+  hideSetupModal();
+  showToast('Running with local storage only', 'success');
+}
+async function doSetup() {
+  const apiKey = document.getElementById('setup-apikey').value.trim();
+  const binIdInput = document.getElementById('setup-binid').value.trim();
+  const errEl = document.getElementById('setup-error');
+  const btn = document.getElementById('setup-btn');
+  errEl.style.display = 'none';
+  if (!apiKey) { errEl.textContent = 'Please enter your API key'; errEl.style.display='block'; return; }
+  btn.textContent = 'Connecting…'; btn.disabled = true;
+  try {
+    let binId = binIdInput;
+    if (!binId) {
+      // Create new bin with seed data
+      binId = await createBin(apiKey, _db);
+    }
+    // Test read
+    const cfg = { apiKey, binId };
+    saveCfg(cfg);
+    const data = await cloudGet();
+    if (!data) throw new Error('Could not read from bin — check Bin ID');
+    _db = data;
+    setCache(_db);
+    hideSetupModal();
+    const dates = getAllDates();
+    currentDate = dates[0];
+    renderHistoryBar(); renderAll(); updateDateDisplay();
+    renderCloudSettings();
+    showToast('✓ Cloud connected! Bin ID: ' + binId, 'success');
+  } catch(e) {
+    errEl.textContent = 'Error: ' + e.message;
+    errEl.style.display = 'block';
+    const cfg = getCfg(); delete cfg.binId; saveCfg(cfg);
+  }
+  btn.textContent = 'Connect & Sync ↗'; btn.disabled = false;
+}
+
+function renderCloudSettings() {
+  const cfg = getCfg();
+  document.getElementById('cfg-apikey').value = cfg.apiKey || '';
+  document.getElementById('cfg-binid').value = cfg.binId || '';
+  const statusEl = document.getElementById('cloud-status-card');
+  if (cfg.binId && cfg.apiKey) {
+    statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><div style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0"></div><div><div style="font-weight:600;color:var(--green)">Cloud Connected</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Bin ID: <span style="font-family:'DM Mono';color:var(--text)">${cfg.binId}</span></div></div></div>`;
+    document.getElementById('share-instructions').innerHTML = `
+      <div>1️⃣  Share this <strong style="color:var(--text)">Bin ID</strong> with your team: <code style="background:var(--bg3);padding:2px 8px;border-radius:4px;font-family:'DM Mono'">${cfg.binId}</code></div>
+      <div>2️⃣  Each team member: open this dashboard URL</div>
+      <div>3️⃣  Click <strong style="color:var(--text)">☁ Cloud Settings</strong> → paste the same API key + Bin ID → Save</div>
+      <div>4️⃣  Now one upload from any device = everyone sees it instantly ✓</div>`;
+  } else {
+    statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><div style="width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0"></div><div style="font-weight:600;color:var(--red)">Not Connected — using local browser storage only</div></div>`;
+    document.getElementById('share-instructions').innerHTML = `<div style="color:var(--text2)">Set up cloud connection above first.</div>`;
+  }
+}
+async function saveCfgAndReload() {
+  const apiKey = document.getElementById('cfg-apikey').value.trim();
+  const binId = document.getElementById('cfg-binid').value.trim();
+  if (!apiKey || !binId) { showToast('Both API key and Bin ID are required', 'error'); return; }
+  saveCfg({ apiKey, binId });
+  showToast('⏳ Reconnecting…', 'success');
+  const data = await cloudGet();
+  if (data) {
+    _db = data; setCache(_db);
+    const dates = getAllDates(); currentDate = dates[0];
+    renderHistoryBar(); renderAll(); updateDateDisplay();
+    renderCloudSettings();
+    showToast('✓ Reconnected to cloud', 'success');
+  } else {
+    showToast('❌ Could not connect — check credentials', 'error');
+  }
+}
+function clearCfg() {
+  if (!confirm('Disconnect cloud? Data stays local only.')) return;
+  saveCfg({});
+  renderCloudSettings();
+  showToast('Cloud disconnected', 'success');
+}
+
+// Patch goTo to also render cloud settings when visiting that tab
+const _origGoTo_cloud = goTo;
+
+// ============================================================
+// START
+// ============================================================
+init();
+</script>
+</body>
+</html>
