@@ -424,6 +424,9 @@ select:focus { outline: none; border-color: var(--blue); }
   </div>
   <div class="header-right">
     <div class="date-badge" id="active-date-display">Loading…</div>
+    <button onclick="showSetupModal()" title="Cloud Setup" style="background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:7px 12px;color:#8b949e;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif">
+      ☁ <span id="cloud-status-dot" style="width:7px;height:7px;border-radius:50%;background:#f85149;display:inline-block"></span>
+    </button>
     <button id="upload-btn" onclick="document.getElementById('file-input').click()">
       ⬆ Upload Excel
     </button>
@@ -880,12 +883,8 @@ function getCurrentSnap() { return getSnap(currentDate); }
 async function init() {
   showGlobalLoading(true);
   const cfg = getCfg();
-  if (!cfg.binId || !cfg.apiKey) {
-    _db = getCache();
-    seedInitialData();
-    showGlobalLoading(false);
-    showSetupModal();
-  } else {
+  // Load data first (from cache or cloud)
+  if (cfg.binId && cfg.apiKey) {
     const cloudData = await cloudGet();
     if (cloudData) {
       _db = cloudData;
@@ -893,15 +892,21 @@ async function init() {
     } else {
       _db = getCache();
       seedInitialData();
-      showToast('⚠ Could not reach cloud — showing cached data', 'error');
     }
-    showGlobalLoading(false);
+  } else {
+    _db = getCache();
+    seedInitialData();
   }
+  showGlobalLoading(false);
   const dates = getAllDates();
   currentDate = dates[0];
   renderHistoryBar();
   renderAll();
   updateDateDisplay();
+  // Show setup modal if not configured
+  if (!cfg.binId || !cfg.apiKey) {
+    setTimeout(() => showSetupModal(), 400);
+  }
 }
 function showGlobalLoading(show) {
   document.getElementById('global-loading').style.display = show ? 'flex' : 'none';
@@ -1546,6 +1551,8 @@ async function doSetup() {
     _db = data;
     setCache(_db);
     hideSetupModal();
+    const dot = document.getElementById('cloud-status-dot');
+    if (dot) dot.style.background = '#3fb950';
     const dates = getAllDates();
     currentDate = dates[0];
     renderHistoryBar(); renderAll(); updateDateDisplay();
@@ -1563,6 +1570,9 @@ function renderCloudSettings() {
   const cfg = getCfg();
   document.getElementById('cfg-apikey').value = cfg.apiKey || '';
   document.getElementById('cfg-binid').value = cfg.binId || '';
+  // Update header dot
+  const dot = document.getElementById('cloud-status-dot');
+  if (dot) dot.style.background = (cfg.binId && cfg.apiKey) ? '#3fb950' : '#f85149';
   const statusEl = document.getElementById('cloud-status-card');
   if (cfg.binId && cfg.apiKey) {
     statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><div style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0"></div><div><div style="font-weight:600;color:var(--green)">Cloud Connected</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Bin ID: <span style="font-family:'DM Mono';color:var(--text)">${cfg.binId}</span></div></div></div>`;
